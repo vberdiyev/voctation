@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocTation - Audio Transcription & Summarization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.95;
+            margin-top: 0.3rem;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.2s;
+        }
+
+        .panel:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .panel-header {
+            background: #fafafa;
+            border-bottom: 2px solid #2e7d32;
+            padding: 1rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #2e7d32;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .step-number {
+            background: #2e7d32;
+            color: white;
+            width: 26px;
+            height: 26px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .panel-content {
+            padding: 1.2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-footer {
+            padding: 1rem 1.2rem;
+            border-top: 1px solid #f0f0f0;
+            background: #fafafa;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .form-group select,
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #d0d0d0;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            background: white;
+            transition: border-color 0.2s;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #2e7d32;
+            box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-button {
+            display: block;
+            width: 100%;
+            padding: 0.6rem;
+            background: white;
+            border: 1px solid #d0d0d0;
+            border-radius: 3px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #555;
+            transition: all 0.2s;
+        }
+
+        .file-input-button:hover {
+            background: #f5f5f5;
+            border-color: #2e7d32;
+        }
+
+        .file-list {
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            max-height: 280px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .file-item {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid #efefef;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background: #f0f0f0;
+        }
+
+        .file-item.selected {
+            background: #e8f5e9;
+            border-left: 3px solid #2e7d32;
+            padding-left: calc(1rem - 3px);
+            font-weight: 500;
+            color: #1b5e20;
+        }
+
+        .file-item.empty {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 2rem 1rem;
+            cursor: default;
+        }
+
+        .file-item.empty:hover {
+            background: #fafafa;
+        }
+
+        .content-display {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 1rem;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+            min-height: 150px;
+            color: #333;
+        }
+
+        #transcriptContent {
+            font-family: 'Courier New', monospace;
+            max-height: 280px;
+        }
+
+        #outlineContent {
+            font-family: inherit;
+            line-height: 1.7;
+        }
+
+        #outlineContent h1 {
+            font-size: 1.4rem;
+            margin: 1rem 0 0.5rem 0;
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        #outlineContent h2 {
+            font-size: 1.15rem;
+            margin: 0.8rem 0 0.4rem 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        #outlineContent h3 {
+            font-size: 1rem;
+            margin: 0.6rem 0 0.3rem 0;
+            color: #555;
+            font-weight: 600;
+        }
+
+        #outlineContent ul, #outlineContent ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        #outlineContent li {
+            margin: 0.3rem 0;
+        }
+
+        #outlineContent p {
+            margin: 0.5rem 0;
+        }
+
+        #outlineContent code {
+            background: #e0e0e0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        #outlineContent strong {
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        #outlineContent em {
+            font-style: italic;
+            color: #555;
+        }
+
+        .content-display.empty {
+            color: #999;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.7rem 1rem;
+            border: none;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 120px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1b5e20;
+            box-shadow: 0 2px 6px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #d0d0d0;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e8e8e8;
+            border-color: #b0b0b0;
+        }
+
+        .btn-secondary:disabled {
+            background: #f8f8f8;
+            cursor: not-allowed;
+            color: #999;
+            border-color: #e0e0e0;
+        }
+
+        .info-text {
+            font-size: 0.8rem;
+            color: #666;
+            margin: 0.5rem 0;
+        }
+
+        .code {
+            background: #f0f0f0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 2px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem 1.2rem;
+            border-radius: 3px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .notification.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+
+        .notification.warning {
+            background: #fff3e0;
+            color: #e65100;
+            border-left: 4px solid #e65100;
+        }
+
+        .notification.info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #1565c0;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .spinner.dark {
+            border-color: rgba(0,0,0,0.1);
+            border-top-color: #2e7d32;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Process indicator overlay */
+        .process-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #2e7d32;
+            color: white;
+            padding: 0.7rem;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 999;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .columns {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .columns {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            button {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>VocTation</h1>
+        <p>Audio Transcription & Summarization Platform</p>
+    </div>
+
+    <div class="container">
+        <div class="columns">
+            <!-- Column 1: Upload Audio -->
+            <div class="column">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="step-number">1</div>
+                        <div>Upload Audio</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="form-group">
+                            <label for="fileInput">Select audio file:</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="fileInput" accept="audio/*">
+                                <label for="fileInput" class="file-input-button">Choose File</label>
+                            </div>
+                        </div>
+
+                        <div class="info-text">
+                            Files: <span class="code">user-data/audio/</span>
+                        </div>
+
+                        <div style="margin-top: 1rem; margin-bottom: 1rem; flex: 1; display: flex; flex-direction: column;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.85rem; color: #555;">Available Audio Files:</label>
+                            <div class="file-list" style="flex: 1;">
+                                <div id="audioList" class="file-item empty">No audio files yet</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <button id="transcribeBtn" class="btn-primary" disabled>
+                            Transcribe Audio
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: Transcript -->
+            <div class="column">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="step-number">2</div>
+                        <div>Transcribed Text</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="form-group">
+                            <label for="promptSelect">Summary template:</label>
+                            <select id="promptSelect">
+                                <option value="">Select template...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mdFileInput">Or upload transcript (.md file):</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="mdFileInput" accept=".md,.txt">
+                                <label for="mdFileInput" class="file-input-button">Choose File</label>
+                            </div>
+                        </div>
+
+                        <div class="info-text">
+                            File: <span id="transcriptFileName" style="font-weight: 500;">No file selected</span>
+                        </div>
+
+                        <div style="margin-top: 1rem; flex: 1; display: flex; flex-direction: column;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.85rem; color: #555;">Transcript:</label>
+                            <div id="transcriptContent" class="content-display empty" style="flex: 1;">
+                                Transcript will appear here...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <div class="button-group">
+                            <button id="downloadTranscriptBtn" class="btn-secondary" disabled>
+                                Download
+                            </button>
+                            <button id="summarizeBtn" class="btn-primary" disabled style="flex: 2;">
+                                Summarize
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 3: Summary -->
+            <div class="column">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="step-number">3</div>
+                        <div>Generated Summary</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="info-text">
+                            File: <span id="outlineFileName" style="font-weight: 500;">No summary generated</span>
+                        </div>
+
+                        <div style="margin-top: 1rem; flex: 1; display: flex; flex-direction: column;">
+                            <div id="outlineContent" class="content-display empty" style="flex: 1;">
+                                Summary will appear here...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <div class="button-group">
+                            <button id="copyBtn" class="btn-secondary" disabled>
+                                Copy
+                            </button>
+                            <button id="downloadOutlineBtn" class="btn-secondary" disabled>
+                                Download
+                            </button>
+                            <button id="editBtn" class="btn-secondary" disabled>
+                                Edit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/marked.min.js"></script>
+    <script>
+        // Initialize marked configuration
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+        }
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
